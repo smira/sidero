@@ -15,8 +15,6 @@ import (
 
 	debug "github.com/siderolabs/go-debug"
 	"github.com/spf13/pflag"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -350,13 +348,6 @@ func main() {
 	}()
 
 	go func() {
-		// Go standard library doesn't support running HTTP/2 on non-TLS HTTP connections.
-		// Package h2c provides handling for HTTP/2 over plaintext connection.
-		// gRPC provides its own HTTP/2 server implementation, so that's not an issue for gRPC,
-		// but as we unify all endpoints under a single HTTP endpoint, we have to provide additional
-		// layer of support here.
-		h2s := &http2.Server{}
-
 		grpcHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if req.ProtoMajor == 2 && strings.HasPrefix(
 				req.Header.Get("Content-Type"), "application/grpc") {
@@ -370,7 +361,21 @@ func main() {
 			httpMux.ServeHTTP(w, req)
 		})
 
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", httpPort), h2c.NewHandler(grpcHandler, h2s)); err != nil {
+		// gRPC provides its own HTTP/2 server implementation, so that's not an issue for gRPC,
+		// but as we unify all endpoints under a single HTTP endpoint, we have to enable
+		// unencrypted HTTP/2 (h2c) support explicitly, as it is not enabled by default.
+		var protocols http.Protocols
+
+		protocols.SetHTTP1(true)
+		protocols.SetUnencryptedHTTP2(true)
+
+		server := &http.Server{
+			Addr:      fmt.Sprintf(":%d", httpPort),
+			Handler:   grpcHandler,
+			Protocols: &protocols,
+		}
+
+		if err := server.ListenAndServe(); err != nil {
 			setupLog.Error(err, "problem running HTTP server")
 
 			errCh <- err

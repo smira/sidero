@@ -5,9 +5,9 @@
 package cmd
 
 import (
-	"context"
+	"os"
+	"os/signal"
 
-	"github.com/siderolabs/talos/pkg/cli"
 	"github.com/spf13/cobra"
 
 	"github.com/siderolabs/sidero/sfyra/pkg/bootstrap"
@@ -19,45 +19,46 @@ var bootstrapCAPICmd = &cobra.Command{
 	Short: "Install and patch CAPI.",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return cli.WithContext(context.Background(), func(ctx context.Context) error {
-			bootstrapCluster, err := bootstrap.NewCluster(ctx, bootstrap.Options{
-				Name: options.BootstrapClusterName,
-				CIDR: options.BootstrapCIDR,
+		ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt)
+		defer cancel()
 
-				Vmlinuz:        options.BootstrapTalosVmlinuz,
-				Initramfs:      options.BootstrapTalosInitramfs,
-				InstallerImage: options.BootstrapTalosInstaller,
-				CNIBundleURL:   options.BootstrapCNIBundleURL,
+		bootstrapCluster, err := bootstrap.NewCluster(ctx, bootstrap.Options{
+			Name: options.BootstrapClusterName,
+			CIDR: options.BootstrapCIDR,
 
-				TalosctlPath: options.TalosctlPath,
+			Vmlinuz:        options.BootstrapTalosVmlinuz,
+			Initramfs:      options.BootstrapTalosInitramfs,
+			InstallerImage: options.BootstrapTalosInstaller,
+			CNIBundleURL:   options.BootstrapCNIBundleURL,
 
-				RegistryMirrors: options.RegistryMirrors,
+			TalosctlPath: options.TalosctlPath,
 
-				BootstrapCPUs:   options.BootstrapCPUs,
-				BootstrapMemMB:  options.BootstrapMemMB,
-				BootstrapDiskGB: options.BootstrapDiskGB,
-			})
-			if err != nil {
-				return err
-			}
+			RegistryMirrors: options.RegistryMirrors,
 
-			if err = bootstrapCluster.Setup(ctx); err != nil {
-				return err
-			}
-
-			clusterAPI, err := capi.NewManager(ctx, bootstrapCluster, capi.Options{
-				ClusterctlConfigPath:    options.ClusterctlConfigPath,
-				CoreProvider:            options.CoreProvider,
-				BootstrapProviders:      options.BootstrapProviders,
-				InfrastructureProviders: options.InfrastructureProviders,
-				ControlPlaneProviders:   options.ControlPlaneProviders,
-			})
-			if err != nil {
-				return err
-			}
-
-			return clusterAPI.Install(ctx)
+			BootstrapCPUs:   options.BootstrapCPUs,
+			BootstrapMemMB:  options.BootstrapMemMB,
+			BootstrapDiskGB: options.BootstrapDiskGB,
 		})
+		if err != nil {
+			return err
+		}
+
+		if err = bootstrapCluster.Setup(ctx); err != nil {
+			return err
+		}
+
+		clusterAPI, err := capi.NewManager(ctx, bootstrapCluster, capi.Options{
+			ClusterctlConfigPath:    options.ClusterctlConfigPath,
+			CoreProvider:            options.CoreProvider,
+			BootstrapProviders:      options.BootstrapProviders,
+			InfrastructureProviders: options.InfrastructureProviders,
+			ControlPlaneProviders:   options.ControlPlaneProviders,
+		})
+		if err != nil {
+			return err
+		}
+
+		return clusterAPI.Install(ctx)
 	},
 }
 

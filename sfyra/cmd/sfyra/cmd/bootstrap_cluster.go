@@ -5,9 +5,9 @@
 package cmd
 
 import (
-	"context"
+	"os"
+	"os/signal"
 
-	"github.com/siderolabs/talos/pkg/cli"
 	"github.com/spf13/cobra"
 
 	"github.com/siderolabs/sidero/sfyra/pkg/bootstrap"
@@ -18,30 +18,31 @@ var bootstrapClusterCmd = &cobra.Command{
 	Short: "Create a Talos cluster to be used as bootstrap Sidero cluster.",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return cli.WithContext(context.Background(), func(ctx context.Context) error {
-			bootstrapCluster, err := bootstrap.NewCluster(ctx, bootstrap.Options{
-				Name: options.BootstrapClusterName,
-				CIDR: options.BootstrapCIDR,
+		ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt)
+		defer cancel()
 
-				Vmlinuz:        options.BootstrapTalosVmlinuz,
-				Initramfs:      options.BootstrapTalosInitramfs,
-				InstallerImage: options.BootstrapTalosInstaller,
-				CNIBundleURL:   options.BootstrapCNIBundleURL,
+		bootstrapCluster, err := bootstrap.NewCluster(ctx, bootstrap.Options{
+			Name: options.BootstrapClusterName,
+			CIDR: options.BootstrapCIDR,
 
-				TalosctlPath: options.TalosctlPath,
+			Vmlinuz:        options.BootstrapTalosVmlinuz,
+			Initramfs:      options.BootstrapTalosInitramfs,
+			InstallerImage: options.BootstrapTalosInstaller,
+			CNIBundleURL:   options.BootstrapCNIBundleURL,
 
-				RegistryMirrors: options.RegistryMirrors,
+			TalosctlPath: options.TalosctlPath,
 
-				BootstrapCPUs:   options.BootstrapCPUs,
-				BootstrapMemMB:  options.BootstrapMemMB,
-				BootstrapDiskGB: options.BootstrapDiskGB,
-			})
-			if err != nil {
-				return err
-			}
+			RegistryMirrors: options.RegistryMirrors,
 
-			return bootstrapCluster.Setup(ctx)
+			BootstrapCPUs:   options.BootstrapCPUs,
+			BootstrapMemMB:  options.BootstrapMemMB,
+			BootstrapDiskGB: options.BootstrapDiskGB,
 		})
+		if err != nil {
+			return err
+		}
+
+		return bootstrapCluster.Setup(ctx)
 	},
 }
 

@@ -8,16 +8,20 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 
 	"github.com/siderolabs/talos/pkg/machinery/config/configpatcher"
 	"github.com/siderolabs/talos/pkg/machinery/config/container"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
+	k8stypes "github.com/siderolabs/talos/pkg/machinery/config/types/k8s"
 	"github.com/siderolabs/talos/pkg/machinery/config/types/meta"
 	runtimetypes "github.com/siderolabs/talos/pkg/machinery/config/types/runtime"
 	siderolinktypes "github.com/siderolabs/talos/pkg/machinery/config/types/siderolink"
@@ -318,12 +322,97 @@ func patchConfig(decodedData []byte, patches []byte) ([]byte, errorWithCode) {
 // labelNodes is responsible for editing the kubelet extra args such that a given
 // server gets registered with a label containing the UUID of the server resource it's actually running on.
 func labelNodes(decodedData []byte, serverName string) ([]byte, errorWithCode) {
+	// Talos 1.14+ carries the kubelet configuration in a separate `KubeletConfig` document,
+	// while older versions keep it in `.machine.kubelet` of the `v1alpha1` document.
+	kubeletConfig, err := findKubeletConfigDocument(decodedData)
+	if err != nil {
+		return nil, errorWithCode{http.StatusInternalServerError, fmt.Errorf("failure parsing machine config documents: %s", err)}
+	}
+
+	if kubeletConfig != nil {
+		return labelNodesKubeletConfig(decodedData, serverName, kubeletConfig)
+	}
+
 	isMultiDoc := bytes.Contains(decodedData, []byte("---\n"))
 	if isMultiDoc {
 		return labelNodesStrategic(decodedData, serverName)
 	}
 
 	return labelNodesLegacy(decodedData, serverName)
+}
+
+// kubeletConfigDocument is a minimal representation of the Talos 1.14+ `KubeletConfig` document.
+//
+// As with the other config handling in this package, the `configloader` from Talos machinery is
+// avoided on purpose: it fails on "unknown" fields, which would tie Sidero to the exact Talos
+// version it was built with.
+type kubeletConfigDocument struct {
+	APIVersion string         `yaml:"apiVersion"`
+	Kind       string         `yaml:"kind"`
+	ExtraArgs  map[string]any `yaml:"extraArgs"`
+}
+
+// findKubeletConfigDocument looks for a `KubeletConfig` document in a (potentially multi-doc) machine config.
+//
+// It returns nil if the machine config doesn't contain one.
+func findKubeletConfigDocument(decodedData []byte) (*kubeletConfigDocument, error) {
+	decoder := yaml.NewDecoder(bytes.NewReader(decodedData))
+
+	for {
+		var doc kubeletConfigDocument
+
+		err := decoder.Decode(&doc)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil, nil //nolint:nilnil
+			}
+
+			return nil, err
+		}
+
+		if doc.APIVersion == "v1alpha1" && doc.Kind == k8stypes.KubeletConfig { //nolint:goconst
+			return &doc, nil
+		}
+	}
+}
+
+// labelNodesKubeletConfig appends the node label to the `extraArgs` of the `KubeletConfig` document.
+func labelNodesKubeletConfig(decodedData []byte, serverName string, kubeletConfig *kubeletConfigDocument) ([]byte, errorWithCode) {
+	label := fmt.Sprintf("metal.sidero.dev/uuid=%s", serverName)
+
+	// `extraArgs` values are either a single string or a list of strings, so keep whichever
+	// form the existing `node-labels` uses.
+	var nodeLabels any
+
+	switch existing := kubeletConfig.ExtraArgs["node-labels"].(type) {
+	case nil:
+		nodeLabels = label
+	case string:
+		if existing == "" {
+			nodeLabels = label
+		} else {
+			nodeLabels = existing + "," + label
+		}
+	case []any:
+		nodeLabels = slices.Concat(existing, []any{label})
+	default:
+		return nil, errorWithCode{http.StatusInternalServerError, fmt.Errorf("unexpected type %T of kubelet node-labels extra arg", existing)}
+	}
+
+	patch := map[string]any{
+		"apiVersion": kubeletConfig.APIVersion,
+		"kind":       kubeletConfig.Kind,
+		"extraArgs": map[string]any{
+			"node-labels": nodeLabels,
+		},
+	}
+
+	patchMarshaled, err := yaml.Marshal(patch)
+	if err != nil {
+		return nil, errorWithCode{http.StatusInternalServerError, fmt.Errorf("failure marshaling KubeletConfig extraArgs: %s", err)}
+	}
+
+	return patchConfig(decodedData, patchMarshaled)
 }
 
 // labelNodes is responsible for editing the kubelet extra args such that a given
@@ -531,7 +620,7 @@ func (m *metadataConfigs) patchSideroLinkConfig(decodedData []byte) ([]byte, err
 		}
 	}
 
-	_, err = ctr.Validate(validationMode{})
+	_, err = ctr.ValidateAsClient(validationMode{})
 	if err != nil {
 		return decodedData, errorWithCode{
 			errorCode: http.StatusInternalServerError,

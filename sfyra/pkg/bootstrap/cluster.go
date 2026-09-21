@@ -21,6 +21,7 @@ import (
 	"github.com/siderolabs/talos/pkg/machinery/config/bundle"
 	"github.com/siderolabs/talos/pkg/machinery/config/generate"
 	"github.com/siderolabs/talos/pkg/machinery/config/machine"
+	talosconstants "github.com/siderolabs/talos/pkg/machinery/constants"
 	"github.com/siderolabs/talos/pkg/provision"
 	"github.com/siderolabs/talos/pkg/provision/access"
 	"github.com/siderolabs/talos/pkg/provision/providers/qemu"
@@ -203,7 +204,7 @@ func (cluster *Cluster) create(ctx context.Context) error {
 
 	defaultInternalLB := cluster.provisioner.GetInClusterKubernetesControlPlaneEndpoint(request.Network, 6443)
 
-	genOptions, _ := cluster.provisioner.GenOptions(request.Network, config.TalosVersionCurrent)
+	genOptions, _ := cluster.provisioner.GenOptions(request, config.TalosVersionCurrent)
 
 	for _, registryMirror := range cluster.options.RegistryMirrors {
 		parts := strings.SplitN(registryMirror, "=", 2)
@@ -220,6 +221,7 @@ func (cluster *Cluster) create(ctx context.Context) error {
 		&bundle.InputOptions{
 			ClusterName: cluster.options.Name,
 			Endpoint:    defaultInternalLB,
+			KubeVersion: talosconstants.DefaultKubernetesVersion,
 			GenOptions: append(
 				genOptions,
 				generate.WithEndpointList([]string{controlplaneEndpoint}),
@@ -291,7 +293,7 @@ func (cluster *Cluster) create(ctx context.Context) error {
 	}
 
 	cluster.cluster, err = cluster.provisioner.Create(ctx, request,
-		provision.WithBootlader(true),
+		provision.WithBootloader(true),
 		// TODO: UEFI doesn't work correctly on PXE timeout, as it drops to UEFI shell
 		// provision.WithUEFI(true),
 		provision.WithTalosConfig(configBundle.TalosConfig()),

@@ -55,6 +55,7 @@ var extensionServiceCfg = map[string]any{
 	},
 }
 
+//nolint:maintidx
 func TestMetadataService(t *testing.T) {
 	oldSideroCfg := siderolink.Cfg
 	siderolink.Cfg = siderolink.Config{
@@ -203,9 +204,7 @@ func TestMetadataService(t *testing.T) {
 			expectedCode: http.StatusOK,
 			expectedConfigs: append([]map[string]any{{
 				"version": "v1alpha1",
-				"cluster": map[string]any{
-					"controlPlane": nil,
-				},
+				"cluster": map[string]any{},
 				"machine": map[string]any{
 					"certSANs": []any{},
 					"kubelet": map[string]any{
@@ -242,6 +241,85 @@ func TestMetadataService(t *testing.T) {
 					},
 				},
 				extensionServiceCfg,
+			}, sideroLinkCfgs...),
+		},
+		{
+			name:         "kubelet config document without extra args",
+			path:         "/configdata?uuid=7777-8888-9999",
+			expectedCode: http.StatusOK,
+			expectedConfigs: append([]map[string]any{
+				{
+					"version": "v1alpha1",
+					"cluster": nil,
+					"machine": map[string]any{
+						"certSANs": []any{},
+						"token":    "",
+						"type":     "",
+					},
+				},
+				{
+					"apiVersion": "v1alpha1",
+					"kind":       "KubeletConfig",
+					"image":      "ghcr.io/siderolabs/kubelet:v1.34.0",
+					"config":     map[string]any{},
+					"extraArgs": map[string]any{
+						"node-labels": "metal.sidero.dev/uuid=7777-8888-9999",
+					},
+				},
+			}, sideroLinkCfgs...),
+		},
+		{
+			name:         "kubelet config document with node labels",
+			path:         "/configdata?uuid=8888-9999-0000",
+			expectedCode: http.StatusOK,
+			expectedConfigs: append([]map[string]any{
+				{
+					"version": "v1alpha1",
+					"cluster": nil,
+					"machine": map[string]any{
+						"certSANs": []any{},
+						"token":    "",
+						"type":     "",
+					},
+				},
+				{
+					"apiVersion": "v1alpha1",
+					"kind":       "KubeletConfig",
+					"image":      "ghcr.io/siderolabs/kubelet:v1.34.0",
+					"config":     map[string]any{},
+					"extraArgs": map[string]any{
+						"feature-gates": "AllBeta=true",
+						"node-labels":   "foo=bar,metal.sidero.dev/uuid=8888-9999-0000",
+					},
+				},
+			}, sideroLinkCfgs...),
+		},
+		{
+			name:         "kubelet config document with node labels as a list",
+			path:         "/configdata?uuid=9999-0000-1111",
+			expectedCode: http.StatusOK,
+			expectedConfigs: append([]map[string]any{
+				{
+					"version": "v1alpha1",
+					"cluster": nil,
+					"machine": map[string]any{
+						"certSANs": []any{},
+						"token":    "",
+						"type":     "",
+					},
+				},
+				{
+					"apiVersion": "v1alpha1",
+					"kind":       "KubeletConfig",
+					"image":      "ghcr.io/siderolabs/kubelet:v1.34.0",
+					"config":     map[string]any{},
+					"extraArgs": map[string]any{
+						"node-labels": []any{
+							"foo=bar",
+							"metal.sidero.dev/uuid=9999-0000-1111",
+						},
+					},
+				},
 			}, sideroLinkCfgs...),
 		},
 	}

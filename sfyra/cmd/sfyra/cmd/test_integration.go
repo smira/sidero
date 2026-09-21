@@ -5,11 +5,10 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
+	"os/signal"
 
-	"github.com/siderolabs/talos/pkg/cli"
 	"github.com/spf13/cobra"
 
 	"github.com/siderolabs/sidero/sfyra/pkg/bootstrap"
@@ -24,81 +23,82 @@ var testIntegrationCmd = &cobra.Command{
 	Short: "Run integration test against Sidero.",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return cli.WithContext(context.Background(), func(ctx context.Context) error {
-			bootstrapCluster, err := bootstrap.NewCluster(ctx, bootstrap.Options{
-				Name: options.BootstrapClusterName,
-				CIDR: options.BootstrapCIDR,
+		ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt)
+		defer cancel()
 
-				Vmlinuz:        options.BootstrapTalosVmlinuz,
-				Initramfs:      options.BootstrapTalosInitramfs,
-				InstallerImage: options.BootstrapTalosInstaller,
-				CNIBundleURL:   options.BootstrapCNIBundleURL,
+		bootstrapCluster, err := bootstrap.NewCluster(ctx, bootstrap.Options{
+			Name: options.BootstrapClusterName,
+			CIDR: options.BootstrapCIDR,
 
-				TalosctlPath: options.TalosctlPath,
+			Vmlinuz:        options.BootstrapTalosVmlinuz,
+			Initramfs:      options.BootstrapTalosInitramfs,
+			InstallerImage: options.BootstrapTalosInstaller,
+			CNIBundleURL:   options.BootstrapCNIBundleURL,
 
-				RegistryMirrors: options.RegistryMirrors,
+			TalosctlPath: options.TalosctlPath,
 
-				BootstrapCPUs:   options.BootstrapCPUs,
-				BootstrapMemMB:  options.BootstrapMemMB,
-				BootstrapDiskGB: options.BootstrapDiskGB,
+			RegistryMirrors: options.RegistryMirrors,
 
-				VMNodes: options.ManagementNodes,
+			BootstrapCPUs:   options.BootstrapCPUs,
+			BootstrapMemMB:  options.BootstrapMemMB,
+			BootstrapDiskGB: options.BootstrapDiskGB,
 
-				VMCPUs:   options.ManagementCPUs,
-				VMMemMB:  options.ManagementMemMB,
-				VMDiskGB: options.ManagementDiskGB,
+			VMNodes: options.ManagementNodes,
 
-				VMDefaultBootOrder: options.DefaultBootOrder,
-			})
-			if err != nil {
-				return err
-			}
+			VMCPUs:   options.ManagementCPUs,
+			VMMemMB:  options.ManagementMemMB,
+			VMDiskGB: options.ManagementDiskGB,
 
-			if !options.SkipTeardown {
-				defer bootstrapCluster.TearDown(ctx) //nolint:errcheck
-			}
-
-			if err = bootstrapCluster.Setup(ctx); err != nil {
-				return err
-			}
-
-			clusterAPI, err := capi.NewManager(ctx, bootstrapCluster, capi.Options{
-				ClusterctlConfigPath:    options.ClusterctlConfigPath,
-				CoreProvider:            options.CoreProvider,
-				BootstrapProviders:      options.BootstrapProviders,
-				InfrastructureProviders: options.InfrastructureProviders,
-				ControlPlaneProviders:   options.ControlPlaneProviders,
-
-				PowerSimulatedExplicitFailureProb: options.PowerSimulatedExplicitFailureProb,
-				PowerSimulatedSilentFailureProb:   options.PowerSimulatedSilentFailureProb,
-			})
-			if err != nil {
-				return err
-			}
-
-			if err = clusterAPI.Install(ctx); err != nil {
-				return err
-			}
-
-			// hacky hack
-			os.Args = append(os.Args[0:1], "-test.v")
-
-			if ok := tests.Run(ctx, bootstrapCluster, clusterAPI, tests.Options{
-				KernelURL: options.TalosKernelURL,
-				InitrdURL: options.TalosInitrdURL,
-
-				RegistryMirrors: options.RegistryMirrors,
-
-				RunTestPattern: runTestPattern,
-
-				TalosRelease:      TalosRelease,
-				KubernetesVersion: KubernetesVersion,
-			}); !ok {
-				return fmt.Errorf("test failure")
-			}
-
-			return nil
+			VMDefaultBootOrder: options.DefaultBootOrder,
 		})
+		if err != nil {
+			return err
+		}
+
+		if !options.SkipTeardown {
+			defer bootstrapCluster.TearDown(ctx) //nolint:errcheck
+		}
+
+		if err = bootstrapCluster.Setup(ctx); err != nil {
+			return err
+		}
+
+		clusterAPI, err := capi.NewManager(ctx, bootstrapCluster, capi.Options{
+			ClusterctlConfigPath:    options.ClusterctlConfigPath,
+			CoreProvider:            options.CoreProvider,
+			BootstrapProviders:      options.BootstrapProviders,
+			InfrastructureProviders: options.InfrastructureProviders,
+			ControlPlaneProviders:   options.ControlPlaneProviders,
+
+			PowerSimulatedExplicitFailureProb: options.PowerSimulatedExplicitFailureProb,
+			PowerSimulatedSilentFailureProb:   options.PowerSimulatedSilentFailureProb,
+		})
+		if err != nil {
+			return err
+		}
+
+		if err = clusterAPI.Install(ctx); err != nil {
+			return err
+		}
+
+		// hacky hack
+		os.Args = append(os.Args[0:1], "-test.v")
+
+		if ok := tests.Run(ctx, bootstrapCluster, clusterAPI, tests.Options{
+			KernelURL: options.TalosKernelURL,
+			InitrdURL: options.TalosInitrdURL,
+
+			RegistryMirrors: options.RegistryMirrors,
+
+			RunTestPattern: runTestPattern,
+
+			TalosRelease:      TalosRelease,
+			KubernetesVersion: KubernetesVersion,
+		}); !ok {
+			return fmt.Errorf("test failure")
+		}
+
+		return nil
 	},
 }
 

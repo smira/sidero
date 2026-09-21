@@ -58,7 +58,7 @@ func DefaultOptions() Options {
 		BootstrapClusterName:    "sfyra",
 		BootstrapTalosVmlinuz:   fmt.Sprintf("_out/%s/vmlinuz-amd64", TalosRelease),
 		BootstrapTalosInitramfs: fmt.Sprintf("_out/%s/initramfs-amd64.xz", TalosRelease),
-		BootstrapTalosInstaller: fmt.Sprintf("ghcr.io/siderolabs/installer:%s", TalosRelease),
+		BootstrapTalosInstaller: fmt.Sprintf("factory.talos.dev/metal-installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba:%s", TalosRelease),
 		BootstrapCNIBundleURL:   fmt.Sprintf("https://github.com/siderolabs/talos/releases/download/%s/talosctl-cni-bundle-%s.tar.gz", TalosRelease, "amd64"),
 		BootstrapCIDR:           "172.24.0.0/24",
 

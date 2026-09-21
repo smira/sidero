@@ -38,6 +38,8 @@ FROM --platform=amd64 ghcr.io/siderolabs/util-linux:${PKGS} AS pkg-util-linux-am
 FROM --platform=arm64 ghcr.io/siderolabs/util-linux:${PKGS} AS pkg-util-linux-arm64
 FROM --platform=amd64 ghcr.io/siderolabs/kmod:${PKGS} AS pkg-kmod-amd64
 FROM --platform=arm64 ghcr.io/siderolabs/kmod:${PKGS} AS pkg-kmod-arm64
+FROM --platform=amd64 ghcr.io/siderolabs/libucontext:${PKGS} AS pkg-libucontext-amd64
+FROM --platform=arm64 ghcr.io/siderolabs/libucontext:${PKGS} AS pkg-libucontext-arm64
 
 # linux-firmware is not arch-specific
 FROM --platform=amd64 ghcr.io/siderolabs/linux-firmware:${PKGS} AS pkg-linux-firmware
@@ -199,6 +201,7 @@ COPY --from=pkg-systemd-udevd-amd64 / .
 COPY --from=pkg-libcap-amd64 / .
 COPY --from=pkg-libsepol-amd64 / .
 COPY --from=pkg-libselinux-amd64 / .
+COPY --from=pkg-libucontext-amd64 / .
 COPY --from=pkg-pcre2-amd64 / .
 COPY --from=pkg-ipmitool-amd64 / .
 COPY --from=agent-build-amd64 /agent ./init
@@ -222,6 +225,7 @@ COPY --from=pkg-systemd-udevd-arm64 / .
 COPY --from=pkg-libcap-arm64 / .
 COPY --from=pkg-libsepol-arm64 / .
 COPY --from=pkg-libselinux-arm64 / .
+COPY --from=pkg-libucontext-arm64 / .
 COPY --from=pkg-pcre2-arm64 / .
 COPY --from=pkg-ipmitool-arm64 / .
 COPY --from=agent-build-arm64 /agent ./init

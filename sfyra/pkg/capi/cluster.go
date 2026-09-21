@@ -165,7 +165,7 @@ func (cluster *Cluster) Health(ctx context.Context) error {
 }
 
 func (cluster *Cluster) health(ctx context.Context) error {
-	resp, err := cluster.client.ClusterHealthCheck(talosclient.WithNodes(ctx, cluster.controlPlaneNodes[0]), 3*time.Minute, &talosclusterapi.ClusterInfo{
+	resp, err := cluster.client.ClusterHealthCheck(talosclient.WithNode(ctx, cluster.controlPlaneNodes[0]), 3*time.Minute, &talosclusterapi.ClusterInfo{
 		ControlPlaneNodes: cluster.controlPlaneNodes,
 		WorkerNodes:       cluster.workerNodes,
 	})
@@ -184,11 +184,7 @@ func (cluster *Cluster) health(ctx context.Context) error {
 				return nil
 			}
 
-			return err
-		}
-
-		if msg.GetMetadata().GetError() != "" {
-			return fmt.Errorf("healthcheck error: %s", msg.GetMetadata().GetError())
+			return fmt.Errorf("healthcheck error: %w", err)
 		}
 
 		fmt.Fprintln(os.Stderr, msg.GetMessage())

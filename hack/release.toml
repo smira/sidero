@@ -6,7 +6,7 @@ github_repo = "siderolabs/sidero"
 match_deps = "^github.com/(siderolabs/[a-zA-Z0-9-]+)$"
 
 # previous release
-previous = "v0.6.13"
+previous = "v0.6.14"
 
 pre_release = false
 
@@ -15,8 +15,8 @@ preface = """\
 
 [notes]
 
-[notes.ipmi]
-    title = "IPMI"
+[notes.talos]
+    title = "Talos"
    description = """\
-Sidero Metal now supports passing custom args to `ipmitool` invocation via Server.BMC.ExtraArgs field.
+Sidero Metal is now compatible with Talos v1.14.x.
 """
