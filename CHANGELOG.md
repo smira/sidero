@@ -1,3 +1,112 @@
+## [Sidero 0.6.15](https://github.com/siderolabs/sidero/releases/tag/v0.6.15) (2026-09-22)
+
+Welcome to the v0.6.15 release of Sidero!
+
+
+
+Please try out the release binaries and report any issues at
+https://github.com/siderolabs/sidero/issues.
+
+### Talos
+
+Sidero Metal is now compatible with Talos v1.14.x.
+
+
+### Contributors
+
+* Andrey Smirnov
+* Utku Ozdemir
+* Dmitrii Sharshakov
+* Dmitriy Matrenichev
+* Mark Glants
+* Noel Georgi
+
+### Changes
+<details><summary>1 commit</summary>
+<p>
+
+* [`6ab0c39`](https://github.com/siderolabs/sidero/commit/6ab0c39d9dceb1bdd3cd0432acf19e3a59020981) feat: update for Talos 1.14 compatibility
+</p>
+</details>
+
+### Changes from siderolabs/gen
+<details><summary>3 commits</summary>
+<p>
+
+* [`cbd9518`](https://github.com/siderolabs/gen/commit/cbd9518a7bc6d70cf85390c1f6109c8236ba2a49) chore: rekres and update deps
+* [`26ccee1`](https://github.com/siderolabs/gen/commit/26ccee180839c57d9e2e4fcdf37e4753fc0feb25) feat: provide new YAMl unmarshal validator for null values
+* [`c526410`](https://github.com/siderolabs/gen/commit/c526410f8c26b75ab386877036d4855098f9c429) fix: skip unknown-key check for types with custom YAML unmarshaler
+</p>
+</details>
+
+### Changes from siderolabs/go-debug
+<details><summary>1 commit</summary>
+<p>
+
+* [`44d6398`](https://github.com/siderolabs/go-debug/commit/44d639874ed86ee9ef005e700143d3a5b60bc518) feat: support Go 1.27
+</p>
+</details>
+
+### Changes from siderolabs/go-kmsg
+<details><summary>1 commit</summary>
+<p>
+
+* [`65e97cb`](https://github.com/siderolabs/go-kmsg/commit/65e97cb418de5211ac2bfdc9d4569af74fbbb9f8) fix: boot time offset calculation
+</p>
+</details>
+
+### Changes from siderolabs/go-smbios
+<details><summary>1 commit</summary>
+<p>
+
+* [`063f5dc`](https://github.com/siderolabs/go-smbios/commit/063f5dc16e0a86d4dbb8290d197bdb134d9bafac) chore: rekres + new testdata
+</p>
+</details>
+
+### Changes from siderolabs/grpc-proxy
+<details><summary>3 commits</summary>
+<p>
+
+* [`d670c42`](https://github.com/siderolabs/grpc-proxy/commit/d670c420307acbdc1c71cc1572c1d826f07cf406) chore: bump dependencies
+* [`8614c71`](https://github.com/siderolabs/grpc-proxy/commit/8614c7158032488d36285ce2245d06f49d7447c4) chore: bump deps
+* [`80677e0`](https://github.com/siderolabs/grpc-proxy/commit/80677e04c18d908cacb69566ed95c78c400d4d99) fix: propagate the headers before the message
+</p>
+</details>
+
+### Changes from siderolabs/siderolink
+<details><summary>7 commits</summary>
+<p>
+
+* [`755a982`](https://github.com/siderolabs/siderolink/commit/755a9828fba165ca40b12df0ecd194bec2a9f7b6) chore: update dependencies and rekres
+* [`5d6e09f`](https://github.com/siderolabs/siderolink/commit/5d6e09f62bdb1d2fc49e8f06efe0e008bb0e84c5) fix: rework keying of the streams to the peers
+* [`ad296ab`](https://github.com/siderolabs/siderolink/commit/ad296ab6d9dc41c01a0a72563ec483054cc2d398) chore: rekres, bump deps
+* [`23030b0`](https://github.com/siderolabs/siderolink/commit/23030b03cc25fc04a38b096fbbce60a5bb66f081) fix: keep a replacement gRPC stream's send queue after cleanup
+* [`4b69f46`](https://github.com/siderolabs/siderolink/commit/4b69f46903ba628818a2bb9bfd161bf4b1f57808) fix: correct the wireguard device error handling
+* [`5157d0c`](https://github.com/siderolabs/siderolink/commit/5157d0c6baa873ee4bb4d5a5df5f46314433c9de) fix: accept valid short IPv6 packets on filtered devices
+* [`0a1933c`](https://github.com/siderolabs/siderolink/commit/0a1933ce37ee5383dc0c875fa9da318f38c76e31) chore: bump dependencies
+</p>
+</details>
+
+### Dependency Changes
+
+* **github.com/go-logr/logr**                    v1.4.3 -> v1.4.4
+* **github.com/insomniacslk/dhcp**               5f8cf70e8c5f -> 234b97448fae
+* **github.com/siderolabs/gen**                  v0.8.6 -> v0.8.8
+* **github.com/siderolabs/go-debug**             v0.6.2 -> v0.6.3
+* **github.com/siderolabs/go-kmsg**              v0.1.5 -> v0.1.6
+* **github.com/siderolabs/go-smbios**            v0.3.3 -> v0.3.4
+* **github.com/siderolabs/grpc-proxy**           v0.5.1 -> v0.5.2
+* **github.com/siderolabs/siderolink**           v0.3.15 -> v0.3.18
+* **github.com/siderolabs/talos/pkg/machinery**  v1.13.0 -> v1.14.1
+* **github.com/stretchr/testify**                v1.11.1 -> v1.12.1
+* **go.uber.org/zap**                            v1.27.1 -> v1.28.0
+* **golang.org/x/sync**                          v0.20.0 -> v0.23.0
+* **golang.org/x/sys**                           v0.43.0 -> v0.48.0
+* **google.golang.org/grpc**                     v1.80.0 -> v1.83.2
+* **google.golang.org/protobuf**                 f2248ac996af -> v1.36.12
+
+Previous release can be found at [v0.6.14](https://github.com/siderolabs/sidero/releases/tag/v0.6.14)
+
 ## [Sidero 0.6.14](https://github.com/siderolabs/sidero/releases/tag/v0.6.14) (2026-06-12)
 
 Welcome to the v0.6.14 release of Sidero!
